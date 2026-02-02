@@ -150,12 +150,23 @@ class AnalogInput:
         This updates the internal _scale and _unscale callables as a side effect,
         preparing them to convert between raw integer ADC values and floating
         point voltages.
+
+        The coefficients define a linear mapping where:
+        - A and B are the lower and upper voltage bounds adjusted by gain.
+        - Slope is the voltage range divided by the bit-resolution.
+        - Intercept is the base voltage (A).
         """
+        # Calculate voltage bounds based on the channel's range and active gain
         A = INPUT_RANGES[self._name][0] / self._gain
         B = INPUT_RANGES[self._name][1] / self._gain
+        
         slope = B - A
         intercept = A
+
+        # _scale maps [0, resolution] (raw) -> [A, B] (voltage)
         self._scale = np.poly1d([slope / self._resolution, intercept])
+        
+        # _unscale maps [A, B] (voltage) -> [0, resolution] (raw)
         self._unscale = np.poly1d(
             [self._resolution / slope, -self._resolution * intercept / slope]
         )
